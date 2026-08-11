@@ -3,6 +3,7 @@ import 'package:movies/views/details/movie_details.dart';
 import 'package:provider/provider.dart';
 import '../../Model/movie.dart';
 import '../../providers/movie_provider.dart';
+import '../../screens/search_page.dart';
 import '../../widgets/featured_movie_card.dart';
 
 class HomePage extends StatefulWidget {
@@ -27,6 +28,7 @@ class _HomePageState extends State<HomePage> {
     final movieProvider = Provider.of<MovieProvider>(context);
     return Scaffold(
       appBar: AppBar(
+        iconTheme: IconThemeData(color: Colors.white),
         centerTitle: true,
         title: Text(
           'Zeymar Movie',
@@ -39,7 +41,14 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Colors.red,
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SearchPage(),
+                ),
+              );
+            },
             icon: Icon(Icons.search),
             color: Colors.white,
           ),

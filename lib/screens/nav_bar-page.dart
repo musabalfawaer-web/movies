@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:movies/screens/search_page.dart';
 import '../views/home/home_page.dart';
 import 'download_page.dart';
 import 'favorite_page.dart';
@@ -16,8 +17,8 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<Widget> pages = [
     const HomePage(),
-
     const DownloadPage(),
+    const SearchPage(),
     const FavoritePage(),
     const ProfilePage(),
   ];
@@ -47,6 +48,7 @@ class _MainScreenState extends State<MainScreen> {
             icon: Icon(Icons.download),
             label: "downloads",
           ),
+          BottomNavigationBarItem(icon: Icon(Icons.search), label: "Search"),
 
           BottomNavigationBarItem(
             icon: Icon(Icons.favorite),

@@ -9,9 +9,9 @@ class ApiService {
     final response = await http.get(
       Uri.parse("$baseUrl/movie/popular?api_key=$apiKey"),
     );
+
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-
       return data['results'];
     } else {
       throw Exception("Failed to load popular movies");
@@ -25,7 +25,6 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-
       return data['results'];
     } else {
       throw Exception("Failed to load top rated movies");
@@ -39,7 +38,6 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-
       return data['results'];
     } else {
       throw Exception("Failed to load upcoming movies");
@@ -58,4 +56,18 @@ class ApiService {
     }
   }
 
+  Future<List<dynamic>> searchMovies(String query) async {
+    final response = await http.get(
+      Uri.parse(
+        "$baseUrl/search/movie?api_key=$apiKey&query=${Uri.encodeComponent(query)}",
+      ),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['results'];
+    } else {
+      throw Exception("Failed to search movies");
+    }
+  }
 }
