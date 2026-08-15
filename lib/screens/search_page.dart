@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:movies/views/details/movie_details.dart';
 import '../services/api_service.dart';
 
 class SearchPage extends StatefulWidget {
@@ -96,7 +97,20 @@ class _SearchPageState extends State<SearchPage> {
 
                 final double rating = (movie['vote_average'] ?? 0).toDouble();
 
-                return Column(
+                return InkWell(
+                    onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DetailsPage(
+                        id: movie['id'],
+                      ),
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(12),
+                  child:Column
+                (
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
@@ -156,6 +170,7 @@ class _SearchPageState extends State<SearchPage> {
                       ],
                     ),
                   ],
+                  )
                 );
               },
             ),

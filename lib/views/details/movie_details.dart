@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:movies/providers/movie_provider.dart';
+import 'package:movies/views/details/reviews.dart';
 import 'package:movies/views/home/home_page.dart';
 import 'package:provider/provider.dart';
 
@@ -29,37 +30,36 @@ class _DetailsPageState extends State<DetailsPage> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<MovieProvider>();
+
+    if (provider.isLoadingToGetDetails || provider.movieDetails == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       appBar: AppBar(
-        iconTheme: IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: Colors.white),
+
         title: Text(
           provider.movieDetails!.title,
-          style: const TextStyle(
-            fontSize: 25,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold,color: Colors.white),
         ),
+
         actions: [
           IconButton(
             onPressed: () {
-              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const HomePage()),
+              );
             },
-            icon: const Icon(Icons.arrow_back_ios_new_outlined),
+            icon: const Icon(Icons.home),
           ),
-          const Spacer(),
-          IconButton(onPressed: () {
-            Navigator.push(context,
-              MaterialPageRoute(builder: (context) => const HomePage(),
-              ),
-            );
-          }, icon: const Icon(Icons.home)),
         ],
+
         backgroundColor: Colors.red,
       ),
 
-      body: provider.isLoadingToGetDetails
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
+      body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -117,6 +117,20 @@ class _DetailsPageState extends State<DetailsPage> {
                         provider.movieDetails!.rating.toString(),
                         style: const TextStyle(fontSize: 18),
                       ),
+                      Spacer(),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  OverviewReviews(
+                                      movie: provider.movieDetails!),
+                            ),
+                          );
+                        },
+                        child: const Text('See Reviews'),
+                      ),
                     ],
                   ),
 
@@ -146,10 +160,7 @@ class _DetailsPageState extends State<DetailsPage> {
 
                   const Text(
                     "Overview",
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
 
                   const SizedBox(height: 10),

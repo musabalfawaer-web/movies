@@ -26,23 +26,15 @@ class _SignInPageState extends State<SignInPage> {
         const SnackBar(content: Text('Please enter email and password')),
       );
       return;
-
     }
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (context) => const MainScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const MainScreen()),
     );
-    
+
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Sign in successful')));
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const HomePage()),
-    );
   }
 
   @override
@@ -57,7 +49,21 @@ class _SignInPageState extends State<SignInPage> {
     return Scaffold(
       backgroundColor: Colors.white,
 
-      body: SafeArea(
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const MainScreen()),
+              );
+            },
+            child: Text('Skip'),
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(24),
 
@@ -86,7 +92,7 @@ class _SignInPageState extends State<SignInPage> {
                 controller: emailController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
-                  hintText: 'Enter your email',
+                  hintText: 'Email',
                   prefixIcon: const Icon(Icons.email),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -107,7 +113,7 @@ class _SignInPageState extends State<SignInPage> {
                 controller: passwordController,
                 obscureText: hidePassword,
                 decoration: InputDecoration(
-                  hintText: 'Enter your password',
+                  hintText: 'password',
                   prefixIcon: const Icon(Icons.lock),
 
                   suffixIcon: IconButton(
@@ -154,11 +160,11 @@ class _SignInPageState extends State<SignInPage> {
                 child: TextButton(
                   onPressed: () {
                     Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SignUpPage(),
-                    ),
-                  );
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SignUpPage(),
+                      ),
+                    );
                   },
                   child: const Text("Don't have an account? Sign Up"),
                 ),
