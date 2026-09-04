@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "912190398848",
+    "project_id": "zeymar-2d5c3",
+    "storage_bucket": "zeymar-2d5c3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:912190398848:android:84422987b76fe5ca6da165",
+        "android_client_info": {
+          "package_name": "com.example.movies"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCs7rnHSZWFt4iw8nUyn6tI7ETr5Q97PL0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

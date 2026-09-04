@@ -1,8 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:movies/auth_page/sign_up.dart';
-
 import '../screens/nav_bar-page.dart';
-import '../views/home/home_page.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -16,8 +15,9 @@ class _SignInPageState extends State<SignInPage> {
   final passwordController = TextEditingController();
 
   bool hidePassword = true;
+  bool isLoading = false;
 
-  void signIn() {
+  Future<void> signIn() async {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
 
@@ -27,14 +27,51 @@ class _SignInPageState extends State<SignInPage> {
       );
       return;
     }
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const MainScreen()),
-    );
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Sign in successful')));
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      if (!mounted) return;
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const MainScreen(initialIndex: 0),
+        ),
+        (route) => false,
+      );
+    } on FirebaseAuthException catch (e) {
+      String message = 'Something went wrong';
+
+      if (e.code == 'user-not-found') {
+        message = 'No account found with this email';
+      } else if (e.code == 'wrong-password' || e.code == 'invalid-credential') {
+        message = 'Email or password is incorrect';
+      } else if (e.code == 'invalid-email') {
+        message = 'Please enter a valid email';
+      } else if (e.code == 'too-many-requests') {
+        message = 'Too many attempts. Try again later';
+      }
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -48,25 +85,10 @@ class _SignInPageState extends State<SignInPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const MainScreen()),
-              );
-            },
-            child: Text('Skip'),
-          ),
-        ],
-      ),
+      appBar: AppBar(backgroundColor: Colors.white),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(24),
-
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -113,9 +135,8 @@ class _SignInPageState extends State<SignInPage> {
                 controller: passwordController,
                 obscureText: hidePassword,
                 decoration: InputDecoration(
-                  hintText: 'password',
+                  hintText: 'Password',
                   prefixIcon: const Icon(Icons.lock),
-
                   suffixIcon: IconButton(
                     icon: Icon(
                       hidePassword ? Icons.visibility : Icons.visibility_off,
@@ -126,7 +147,6 @@ class _SignInPageState extends State<SignInPage> {
                       });
                     },
                   ),
-
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -139,7 +159,7 @@ class _SignInPageState extends State<SignInPage> {
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
-                  onPressed: signIn,
+                  onPressed: isLoading ? null : signIn,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
                     foregroundColor: Colors.white,
@@ -147,10 +167,22 @@ class _SignInPageState extends State<SignInPage> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    'Sign In',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
+                  child: isLoading
+                      ? const SizedBox(
+                          height: 25,
+                          width: 25,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Sign In',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
 
@@ -167,6 +199,20 @@ class _SignInPageState extends State<SignInPage> {
                     );
                   },
                   child: const Text("Don't have an account? Sign Up"),
+                ),
+              ),
+
+              Center(
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const MainScreen(),
+                      ),
+                    );
+                  },
+                  child: const Text('Continue as Guest'),
                 ),
               ),
             ],
