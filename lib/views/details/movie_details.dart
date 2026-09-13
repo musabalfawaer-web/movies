@@ -1,9 +1,11 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:movies/providers/movie_provider.dart';
+import 'package:movies/services/api_service.dart';
+import 'package:movies/services/download_service.dart';
 import 'package:movies/views/details/reviews.dart';
 import 'package:movies/views/home/home_page.dart';
 import 'package:provider/provider.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 class DetailsPage extends StatefulWidget {
   final int id;
@@ -17,14 +19,100 @@ class DetailsPage extends StatefulWidget {
 class _DetailsPageState extends State<DetailsPage> {
   MovieProvider? _movieProvider;
 
+  final ApiService apiService = ApiService();
+
+  bool isDownloaded = false;
+
   @override
   void initState() {
+    super.initState();
+
     _movieProvider = Provider.of<MovieProvider>(context, listen: false);
 
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
       await _movieProvider!.getMovieDetails(widget.id);
+
+      if (!mounted) return;
+
+      final downloaded = await DownloadService.isDownloaded(widget.id);
+
+      if (mounted) {
+        setState(() {
+          isDownloaded = downloaded;
+        });
+      }
     });
-    super.initState();
+  }
+
+  Future<void> playTrailer() async {
+    try {
+      final trailerKey = await apiService.getMovieTrailer(widget.id);
+
+      if (!mounted) return;
+
+      if (trailerKey == null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Trailer not found")));
+        return;
+      }
+
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            contentPadding: EdgeInsets.zero,
+            backgroundColor: Colors.black,
+            content: YoutubePlayer(
+              controller: YoutubePlayerController(
+                initialVideoId: trailerKey,
+                flags: const YoutubePlayerFlags(autoPlay: true, mute: false),
+              ),
+              showVideoProgressIndicator: true,
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Failed to load trailer")));
+    }
+  }
+
+  Future<void> downloadMovie() async {
+    final movie = _movieProvider!.movieDetails!;
+
+    if (isDownloaded) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Movie is already in Downloads")),
+      );
+      return;
+    }
+
+    await DownloadService.addMovie({
+      'id': movie.id,
+      'title': movie.title,
+      'posterPath': movie.posterPath,
+      'backdropPath': movie.backdropPath,
+      'releaseDate': movie.releaseDate,
+      'runtime': movie.runtime,
+      'rating': movie.rating,
+      'overview': movie.overview,
+      'genres': movie.genres,
+    });
+
+    if (!mounted) return;
+
+    setState(() {
+      isDownloaded = true;
+    });
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text("Movie added to Downloads")));
   }
 
   @override
@@ -35,15 +123,19 @@ class _DetailsPageState extends State<DetailsPage> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    final movie = provider.movieDetails!;
+
     return Scaffold(
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Colors.white),
-
         title: Text(
-          provider.movieDetails!.title,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold,color: Colors.white),
+          movie.title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
-
         actions: [
           IconButton(
             onPressed: () {
@@ -55,10 +147,8 @@ class _DetailsPageState extends State<DetailsPage> {
             icon: const Icon(Icons.home),
           ),
         ],
-
         backgroundColor: Colors.red,
       ),
-
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,17 +156,16 @@ class _DetailsPageState extends State<DetailsPage> {
             Stack(
               children: [
                 Image.network(
-                  provider.movieDetails!.backdropPath,
+                  movie.backdropPath,
                   width: double.infinity,
                   height: 250,
                   fit: BoxFit.cover,
                 ),
-
                 Positioned(
                   bottom: 20,
                   left: 20,
                   child: Image.network(
-                    provider.movieDetails!.posterPath,
+                    movie.posterPath,
                     width: 120,
                     height: 170,
                     fit: BoxFit.cover,
@@ -95,15 +184,14 @@ class _DetailsPageState extends State<DetailsPage> {
                   const SizedBox(height: 10),
 
                   Text(
-                    "${provider.movieDetails!.releaseDate.substring(0, 4)}  "
-                        "•  ${provider.movieDetails!.runtime} min",
+                    "${movie.releaseDate.substring(0, 4)}  •  ${movie.runtime} min",
                     style: const TextStyle(color: Colors.grey),
                   ),
 
                   const SizedBox(height: 10),
 
                   Text(
-                    provider.movieDetails!.genres.join(" • "),
+                    movie.genres.join(" • "),
                     style: const TextStyle(color: Colors.purple),
                   ),
 
@@ -114,18 +202,19 @@ class _DetailsPageState extends State<DetailsPage> {
                       const Icon(Icons.star, color: Colors.amber),
 
                       Text(
-                        provider.movieDetails!.rating.toString(),
+                        movie.rating.toString(),
                         style: const TextStyle(fontSize: 18),
                       ),
-                      Spacer(),
+
+                      const Spacer(),
+
                       TextButton(
                         onPressed: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) =>
-                                  OverviewReviews(
-                                      movie: provider.movieDetails!),
+                                  OverviewReviews(movie: movie),
                             ),
                           );
                         },
@@ -140,7 +229,7 @@ class _DetailsPageState extends State<DetailsPage> {
                     children: [
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () {},
+                          onPressed: playTrailer,
                           child: const Text("Play"),
                         ),
                       ),
@@ -148,9 +237,12 @@ class _DetailsPageState extends State<DetailsPage> {
                       const SizedBox(width: 10),
 
                       Expanded(
-                        child: OutlinedButton(
-                          onPressed: () {},
-                          child: const Text("Download"),
+                        child: OutlinedButton.icon(
+                          onPressed: downloadMovie,
+                          icon: Icon(
+                            isDownloaded ? Icons.check : Icons.download,
+                          ),
+                          label: Text(isDownloaded ? "Downloaded" : "Download"),
                         ),
                       ),
                     ],
@@ -166,7 +258,7 @@ class _DetailsPageState extends State<DetailsPage> {
                   const SizedBox(height: 10),
 
                   Text(
-                    provider.movieDetails!.overview,
+                    movie.overview,
                     style: const TextStyle(fontSize: 16, height: 1.5),
                   ),
                 ],

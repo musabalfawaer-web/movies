@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:movies/screens/download_page.dart';
-import 'package:movies/auth_page/sign_in.dart';
 
 class ProfilePage extends StatelessWidget {
   ProfilePage({super.key});
@@ -9,7 +8,6 @@ class ProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-
     final userName = user?.displayName ?? 'User';
     final userEmail = user?.email ?? 'No email';
 
@@ -20,7 +18,6 @@ class ProfilePage extends StatelessWidget {
         child: Column(
           children: [
             const SizedBox(height: 20),
-
             const Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -32,9 +29,7 @@ class ProfilePage extends StatelessWidget {
                 ),
               ),
             ),
-
             const SizedBox(height: 20),
-
             Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
@@ -47,64 +42,32 @@ class ProfilePage extends StatelessWidget {
                 child: Icon(Icons.person, size: 65, color: Colors.black),
               ),
             ),
-
             const SizedBox(height: 20),
-
             _buildInfoField(icon: Icons.person_outline, text: userName),
-
             const SizedBox(height: 12),
-
             _buildInfoField(icon: Icons.email_outlined, text: userEmail),
-
-            const SizedBox(height: 30),
-
-            _buildButton(
-              icon: Icons.edit_outlined,
-              title: "Edit Profile",
-              onTap: () {},
-            ),
-
             const SizedBox(height: 25),
-
             _buildSectionTitle("My Account"),
-
-            const SizedBox(height: 10),
-
-            _buildProfileOption(
-              icon: Icons.favorite_border,
-              title: "My Favorites",
-              onTap: () {},
-            ),
-
             _buildProfileOption(
               icon: Icons.download_outlined,
               title: "Downloads",
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => DownloadPage()),
+                  MaterialPageRoute(builder: (context) => const DownloadPage()),
                 );
               },
             ),
-
-            const SizedBox(height: 15),
-
-            _buildSectionTitle("App"),
-
-            const SizedBox(height: 10),
-
             _buildProfileOption(
               icon: Icons.settings_outlined,
               title: "Settings",
               onTap: () {},
             ),
-
             _buildProfileOption(
               icon: Icons.info_outline,
               title: "About Us",
               onTap: () {},
             ),
-
             _buildProfileOption(
               icon: Icons.logout,
               title: "Logout",
@@ -255,11 +218,8 @@ class ProfilePage extends StatelessWidget {
             TextButton(
               onPressed: () async {
                 await FirebaseAuth.instance.signOut();
-
                 if (!context.mounted) return;
-
                 Navigator.pop(context);
-
                 showDialog(
                   context: context,
                   builder: (context) {
@@ -274,9 +234,7 @@ class ProfilePage extends StatelessWidget {
                       ),
                       content: const Text(
                         "You have been logged out successfully.",
-                        style: TextStyle(
-                          color: Colors.white,
-                        ),
+                        style: TextStyle(color: Colors.white),
                       ),
                       actions: [
                         TextButton(

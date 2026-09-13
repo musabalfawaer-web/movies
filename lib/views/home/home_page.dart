@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:movies/views/details/movie_details.dart';
 import 'package:provider/provider.dart';
-import '../../Model/movie.dart';
 import '../../providers/movie_provider.dart';
 import '../../screens/search_page.dart';
+import '../../screens/all-movies-page.dart';
 import '../../widgets/featured_movie_card.dart';
 
 class HomePage extends StatefulWidget {
@@ -26,11 +26,12 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final movieProvider = Provider.of<MovieProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
-        iconTheme: IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
-        title: Text(
+        title: const Text(
           'Zeymar Movie',
           style: TextStyle(
             fontWeight: FontWeight.bold,
@@ -44,19 +45,18 @@ class _HomePageState extends State<HomePage> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const SearchPage(),
-                ),
+                MaterialPageRoute(builder: (context) => const SearchPage()),
               );
             },
-            icon: Icon(Icons.search),
+            icon: const Icon(Icons.search),
             color: Colors.white,
           ),
         ],
       ),
+
       body: SingleChildScrollView(
         child: Container(
-          padding: EdgeInsets.all(15),
+          padding: const EdgeInsets.all(15),
           child: Column(
             children: [
               if (movieProvider.isLoading) const CircularProgressIndicator(),
@@ -77,7 +77,15 @@ class _HomePageState extends State<HomePage> {
                         ),
 
                         TextButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    SeeAllPage(collectionTitle: section.title),
+                              ),
+                            );
+                          },
                           child: const Text(
                             "See All",
                             style: TextStyle(color: Colors.red),
@@ -88,25 +96,23 @@ class _HomePageState extends State<HomePage> {
 
                     SizedBox(
                       height: 250,
-
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
-
                         itemCount: section.movies.length,
-
                         itemBuilder: (context, index) {
                           return InkWell(
-                            child: FeaturedMovieCard(
-                              movie: section.movies[index],
-                            ),
                             onTap: () {
-                              int id = section.movies[index].id;
+                              final int id = section.movies[index].id;
+
                               Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (context) => DetailsPage(id: id),
                                 ),
                               );
                             },
+                            child: FeaturedMovieCard(
+                              movie: section.movies[index],
+                            ),
                           );
                         },
                       ),
