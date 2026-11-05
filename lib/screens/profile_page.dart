@@ -1,16 +1,93 @@
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:movies/screens/download_page.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:movies/screens/favorite_page.dart';
+import 'package:movies/screens/settings_page.dart';
+import 'AboutUsPage.dart';
 
-class ProfilePage extends StatelessWidget {
-  ProfilePage({super.key});
+class ProfilePage extends StatefulWidget {
+  const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  File? selectedImage;
+  bool isUploadingImage = false;
+
+  Future<void> changeProfileImage() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return;
+    }
+    try {
+      final ImagePicker picker = ImagePicker();
+
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+      );
+      if (image == null) {
+        return;
+      }
+
+      setState(() {
+        selectedImage = File(image.path);
+        isUploadingImage = true;
+      });
+
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('profile_images')
+          .child('${user.uid}.jpg');
+      await storageRef.putFile(selectedImage!);
+      final imageUrl = await storageRef.getDownloadURL();
+      await user.updatePhotoURL(imageUrl);
+      await user.reload();
+      if (!mounted) return;
+      setState(() {
+        isUploadingImage = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Profile picture updated successfully"),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+    catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        isUploadingImage = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error: $e"),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+
+      debugPrint("PROFILE IMAGE ERROR: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     final userName = user?.displayName ?? 'User';
     final userEmail = user?.email ?? 'No email';
-
+    ImageProvider? profileImage;
+    if (selectedImage != null) {
+      profileImage = FileImage(selectedImage!);
+    } else if (user?.photoURL != null && user!.photoURL!.isNotEmpty) {
+      profileImage = NetworkImage(user.photoURL!);
+    }
     return Container(
       color: Colors.white,
       child: SingleChildScrollView(
@@ -18,6 +95,7 @@ class ProfilePage extends StatelessWidget {
         child: Column(
           children: [
             const SizedBox(height: 20),
+
             const Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -29,44 +107,114 @@ class ProfilePage extends StatelessWidget {
                 ),
               ),
             ),
+
             const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.red, width: 3),
-              ),
-              child: const CircleAvatar(
-                radius: 55,
-                backgroundColor: Colors.white,
-                child: Icon(Icons.person, size: 65, color: Colors.black),
+            GestureDetector(
+              onTap: isUploadingImage ? null : changeProfileImage,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.red, width: 3),
+                    ),
+                    child: CircleAvatar(
+                      radius: 55,
+                      backgroundColor: Colors.white,
+                      backgroundImage: profileImage,
+                      child: profileImage == null
+                          ? const Icon(
+                              Icons.person,
+                              size: 65,
+                              color: Colors.black,
+                            )
+                          : null,
+                    ),
+                  ),
+
+                  if (isUploadingImage)
+                    Container(
+                      width: 110,
+                      height: 110,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.black54,
+                      ),
+                      child: const Center(
+                        child: CircularProgressIndicator(color: Colors.white),
+                      ),
+                    ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.camera_alt,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 20),
+
+            const SizedBox(height: 10),
+
+            TextButton(
+              onPressed: isUploadingImage ? null : changeProfileImage,
+              child: const Text(
+                "Change Profile Picture",
+                style: TextStyle(
+                  color: Colors.red,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 10),
             _buildInfoField(icon: Icons.person_outline, text: userName),
             const SizedBox(height: 12),
             _buildInfoField(icon: Icons.email_outlined, text: userEmail),
             const SizedBox(height: 25),
             _buildSectionTitle("My Account"),
             _buildProfileOption(
-              icon: Icons.download_outlined,
-              title: "Downloads",
+              icon: Icons.favorite_outline,
+              title: "Favorites",
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const DownloadPage()),
+                  MaterialPageRoute(builder: (context) => const FavoritePage()),
                 );
               },
             ),
             _buildProfileOption(
               icon: Icons.settings_outlined,
               title: "Settings",
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SettingsPage()),
+                );
+              },
             ),
             _buildProfileOption(
               icon: Icons.info_outline,
               title: "About Us",
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AboutUsPage()),
+                );
+              },
             ),
             _buildProfileOption(
               icon: Icons.logout,
@@ -108,37 +256,6 @@ class ProfilePage extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildButton({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return SizedBox(
-      width: double.infinity,
-      height: 50,
-      child: ElevatedButton.icon(
-        onPressed: onTap,
-        icon: Icon(icon, color: Colors.black, size: 20),
-        label: Text(
-          title,
-          style: const TextStyle(
-            color: Colors.black,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          side: BorderSide(color: Colors.grey.shade300),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
       ),
     );
   }
@@ -218,8 +335,11 @@ class ProfilePage extends StatelessWidget {
             TextButton(
               onPressed: () async {
                 await FirebaseAuth.instance.signOut();
+
                 if (!context.mounted) return;
+
                 Navigator.pop(context);
+
                 showDialog(
                   context: context,
                   builder: (context) {

@@ -1,11 +1,14 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:movies/providers/movie_provider.dart';
 import 'package:movies/services/api_service.dart';
-import 'package:movies/services/download_service.dart';
+import 'package:movies/services/favorite_service.dart';
 import 'package:movies/views/details/reviews.dart';
 import 'package:movies/views/home/home_page.dart';
 import 'package:provider/provider.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+
+import '../../auth_page/sign_in.dart';
 
 class DetailsPage extends StatefulWidget {
   final int id;
@@ -21,7 +24,7 @@ class _DetailsPageState extends State<DetailsPage> {
 
   final ApiService apiService = ApiService();
 
-  bool isDownloaded = false;
+  bool isFavorite = false;
 
   @override
   void initState() {
@@ -34,11 +37,18 @@ class _DetailsPageState extends State<DetailsPage> {
 
       if (!mounted) return;
 
-      final downloaded = await DownloadService.isDownloaded(widget.id);
+      // Only check favorites if the user is logged in.
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user == null) {
+        return;
+      }
+
+      final favorite = await FavoriteService.isFavorite(widget.id);
 
       if (mounted) {
         setState(() {
-          isDownloaded = downloaded;
+          isFavorite = favorite;
         });
       }
     });
@@ -82,17 +92,78 @@ class _DetailsPageState extends State<DetailsPage> {
     }
   }
 
-  Future<void> downloadMovie() async {
-    final movie = _movieProvider!.movieDetails!;
+  Future<void> toggleFavorite() async {
+    // Check if user is logged in.
+    final user = FirebaseAuth.instance.currentUser;
 
-    if (isDownloaded) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Movie is already in Downloads")),
+    if (user == null) {
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: const Text(
+              "Login Required",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            content: const Text(
+              "Please sign in to add movies to your favorites.",
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                },
+                child: const Text(
+                  "Cancel",
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SignInPage()),
+                  );
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: const Text(
+                  "Sign In",
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          );
+        },
       );
+
       return;
     }
 
-    await DownloadService.addMovie({
+    final movie = _movieProvider!.movieDetails!;
+
+    // Remove from favorites.
+    if (isFavorite) {
+      await FavoriteService.removeMovie(movie.id);
+
+      if (!mounted) return;
+
+      setState(() {
+        isFavorite = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Movie removed from Favorites")),
+      );
+
+      return;
+    }
+
+    // Add to favorites.
+    await FavoriteService.addMovie({
       'id': movie.id,
       'title': movie.title,
       'posterPath': movie.posterPath,
@@ -107,12 +178,12 @@ class _DetailsPageState extends State<DetailsPage> {
     if (!mounted) return;
 
     setState(() {
-      isDownloaded = true;
+      isFavorite = true;
     });
 
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text("Movie added to Downloads")));
+    ).showSnackBar(const SnackBar(content: Text("Movie added to Favorites")));
   }
 
   @override
@@ -127,7 +198,10 @@ class _DetailsPageState extends State<DetailsPage> {
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.red,
+
         iconTheme: const IconThemeData(color: Colors.white),
+
         title: Text(
           movie.title,
           style: const TextStyle(
@@ -136,6 +210,7 @@ class _DetailsPageState extends State<DetailsPage> {
             color: Colors.white,
           ),
         ),
+
         actions: [
           IconButton(
             onPressed: () {
@@ -147,8 +222,8 @@ class _DetailsPageState extends State<DetailsPage> {
             icon: const Icon(Icons.home),
           ),
         ],
-        backgroundColor: Colors.red,
       ),
+
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,6 +236,7 @@ class _DetailsPageState extends State<DetailsPage> {
                   height: 250,
                   fit: BoxFit.cover,
                 ),
+
                 Positioned(
                   bottom: 20,
                   left: 20,
@@ -178,6 +254,7 @@ class _DetailsPageState extends State<DetailsPage> {
 
             Padding(
               padding: const EdgeInsets.all(16),
+
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -200,6 +277,8 @@ class _DetailsPageState extends State<DetailsPage> {
                   Row(
                     children: [
                       const Icon(Icons.star, color: Colors.amber),
+
+                      const SizedBox(width: 5),
 
                       Text(
                         movie.rating.toString(),
@@ -230,6 +309,10 @@ class _DetailsPageState extends State<DetailsPage> {
                       Expanded(
                         child: ElevatedButton(
                           onPressed: playTrailer,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                          ),
                           child: const Text("Play"),
                         ),
                       ),
@@ -238,11 +321,14 @@ class _DetailsPageState extends State<DetailsPage> {
 
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: downloadMovie,
+                          onPressed: toggleFavorite,
+
                           icon: Icon(
-                            isDownloaded ? Icons.check : Icons.download,
+                            isFavorite ? Icons.favorite : Icons.favorite_border,
+                            color: isFavorite ? Colors.red : null,
                           ),
-                          label: Text(isDownloaded ? "Downloaded" : "Download"),
+
+                          label: Text(isFavorite ? "Favorited" : "Favorite"),
                         ),
                       ),
                     ],

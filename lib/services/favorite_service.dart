@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class DownloadService {
-  static const String _key = 'downloaded_movies';
+class FavoriteService {
+  static const String _key = 'favorite_movies';
 
-  static Future<List<Map<String, dynamic>>> getDownloadedMovies() async {
+  static Future<List<Map<String, dynamic>>> getFavoriteMovies() async {
     final prefs = await SharedPreferences.getInstance();
 
     final movies = prefs.getStringList(_key) ?? [];
@@ -43,8 +43,8 @@ class DownloadService {
     await prefs.setStringList(_key, movies);
   }
 
-  static Future<bool> isDownloaded(int id) async {
-    final movies = await getDownloadedMovies();
+  static Future<bool> isFavorite(int id) async {
+    final movies = await getFavoriteMovies();
 
     return movies.any((movie) => movie['id'] == id);
   }
