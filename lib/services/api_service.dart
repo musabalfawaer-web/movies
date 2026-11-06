@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  final String apiKey = "*******************";
+  final String apiKey = "ef0aa44059f4e32bfdfd1fb9fed840b9";
   final String baseUrl = "https://api.themoviedb.org/3";
 
   Future<List<dynamic>> getPopularMovies({int page = 1}) async {
@@ -10,6 +10,9 @@ class ApiService {
       Uri.parse("$baseUrl/movie/popular?api_key=$apiKey&page=$page"),
     );
 
+    git add .
+    git commit -m "Update project"
+    git push origin main
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       return data['results'];
