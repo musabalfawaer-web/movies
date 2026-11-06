@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  final String apiKey = "************************";
+  final String apiKey = "*******************";
   final String baseUrl = "https://api.themoviedb.org/3";
 
   Future<List<dynamic>> getPopularMovies({int page = 1}) async {
